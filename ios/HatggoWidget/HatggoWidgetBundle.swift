@@ -12,6 +12,5 @@ import SwiftUI
 struct HatggoWidgetBundle: WidgetBundle {
     var body: some Widget {
         HatggoWidget()
-        HatggoWidgetControl()
     }
 }

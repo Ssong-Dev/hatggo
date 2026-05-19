@@ -10,7 +10,7 @@ struct ChecklistItem: Codable, Identifiable {
 }
 
 struct Provider: TimelineProvider {
-    let suiteName = "group.com.yourcompany.hatggo"
+    let suiteName = "group.com.ssong.hatggo"
     let prefKey = "checklist_data"
     
     func placeholder(in context: Context) -> SimpleEntry {
@@ -51,42 +51,64 @@ struct SimpleEntry: TimelineEntry {
 
 struct HatggoWidgetEntryView : View {
     var entry: Provider.Entry
+    
+    let primaryColor = Color(red: 155/255, green: 137/255, blue: 255/255)
+    let secondaryColor = Color(red: 107/255, green: 206/255, blue: 180/255)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("햇꼬 체크리스트")
                 .font(.headline)
-                .padding(.bottom, 4)
+                .foregroundColor(.primary)
+                .padding(.bottom, 2)
             
             if entry.items.isEmpty {
-                Text("항목이 없습니다.")
+                Text("진행 중인 체크리스트가 없습니다.")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
             } else {
-                // 최대 5개 항목 노출
-                ForEach(entry.items.prefix(5)) { item in
-                    HStack(spacing: 12) {
-                        // 인터랙티브 버튼: ToggleChecklistItemIntent 호출
-                        Button(intent: ToggleChecklistItemIntent(itemId: item.id)) {
+                // 최대 12개 항목 노출 (systemLarge 위젯 지원)
+                ForEach(entry.items.prefix(12)) { item in
+                    Button(intent: ToggleChecklistItemIntent(itemId: item.id)) {
+                        HStack(spacing: 10) {
                             Image(systemName: item.isChecked ? "checkmark.square.fill" : "square")
-                                .foregroundColor(item.isChecked ? .gray : .blue)
-                                .font(.system(size: 20))
+                                .foregroundColor(item.isChecked ? secondaryColor : .secondary.opacity(0.5))
+                                .font(.system(size: 18))
+                            
+                            Text(item.title)
+                                .strikethrough(item.isChecked)
+                                .foregroundColor(item.isChecked ? .secondary : .primary)
+                                .lineLimit(1)
+                                .font(.system(size: 14, weight: item.isChecked ? .regular : .medium))
+                            
+                            Spacer()
                         }
-                        .buttonStyle(.plain)
-                        
-                        Text(item.title)
-                            .strikethrough(item.isChecked)
-                            .foregroundColor(item.isChecked ? .gray : .primary)
-                            .lineLimit(1)
-                            .font(.system(size: 15))
-                        
+                        .padding(.vertical, 5)
+                        .padding(.horizontal, 8)
+                        .background(Color(UIColor.secondarySystemBackground).opacity(item.isChecked ? 0.2 : 0.6))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                Button(intent: CompleteChecklistIntent()) {
+                    HStack {
+                        Spacer()
+                        Text("완료 처리")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
                         Spacer()
                     }
+                    .padding(.vertical, 10)
+                    .background(primaryColor)
+                    .cornerRadius(12)
                 }
+                .buttonStyle(.plain)
+                .padding(.top, 6)
             }
             Spacer()
         }
-        .containerBackground(Color(UIColor.systemBackground), for: .widget)
+        .containerBackground(.thinMaterial, for: .widget)
     }
 }
 
