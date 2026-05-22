@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:confetti/confetti.dart';
 
 import '../providers/group_provider.dart';
 import '../providers/history_provider.dart';
@@ -297,11 +299,30 @@ class _GroupsTab extends ConsumerWidget {
   }
 }
 
-class _ActiveTab extends ConsumerWidget {
+class _ActiveTab extends ConsumerStatefulWidget {
   const _ActiveTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ActiveTab> createState() => _ActiveTabState();
+}
+
+class _ActiveTabState extends ConsumerState<_ActiveTab> {
+  late ConfettiController _confettiController;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 1));
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final group = ref.watch(activeGroupProvider);
 
     if (group == null) {
@@ -326,142 +347,169 @@ class _ActiveTab extends ConsumerWidget {
       appBar: AppBar(
         title: Text(group.title),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: group.items.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_task, size: 80, color: Colors.grey.shade300),
-                        const SizedBox(height: 16),
-                        Text('항목이 없습니다.\n하단의 + 버튼을 눌러 추가하세요.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 16, height: 1.5)),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                    itemCount: group.items.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final item = group.items[index];
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        decoration: BoxDecoration(
-                          color: item.isChecked ? Colors.grey.shade50 : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: item.isChecked ? Colors.transparent : Colors.grey.shade200),
-                          boxShadow: item.isChecked
-                              ? []
-                              : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+          Column(
+            children: [
+              Expanded(
+                child: group.items.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_task, size: 80, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text('항목이 없습니다.\n하단의 + 버튼을 눌러 추가하세요.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 16, height: 1.5)),
+                          ],
                         ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                          leading: GestureDetector(
-                            onTap: () => ref.read(groupProvider.notifier).toggleItemInGroup(group.id, item.id),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: item.isChecked ? Theme.of(context).colorScheme.secondary : Colors.transparent,
-                                border: Border.all(
-                                  color: item.isChecked ? Theme.of(context).colorScheme.secondary : Colors.grey.shade400,
-                                  width: 2,
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                        itemCount: group.items.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final item = group.items[index];
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            decoration: BoxDecoration(
+                              color: item.isChecked ? Colors.grey.shade50 : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: item.isChecked ? Colors.transparent : Colors.grey.shade200),
+                              boxShadow: item.isChecked
+                                  ? []
+                                  : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                ref.read(groupProvider.notifier).toggleItemInGroup(group.id, item.id);
+                              },
+                              leading: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: item.isChecked ? Theme.of(context).colorScheme.secondary : Colors.transparent,
+                                  border: Border.all(
+                                    color: item.isChecked ? Theme.of(context).colorScheme.secondary : Colors.grey.shade400,
+                                    width: 2,
+                                  ),
                                 ),
+                                child: item.isChecked
+                                    ? const Icon(Icons.check, size: 18, color: Colors.white)
+                                    : null,
                               ),
-                              child: item.isChecked
-                                  ? const Icon(Icons.check, size: 18, color: Colors.white)
-                                  : null,
+                              title: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 200),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontFamily: 'Hansol',
+                                  color: item.isChecked ? Colors.grey.shade400 : Colors.black87,
+                                  decoration: item.isChecked ? TextDecoration.lineThrough : TextDecoration.none,
+                                ),
+                                child: Text(item.title),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.close, color: Colors.black26),
+                                onPressed: () {
+                                  ref.read(groupProvider.notifier).removeItemFromGroup(group.id, item.id);
+                                },
+                              ),
                             ),
-                          ),
-                          title: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 200),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Hansol',
-                              color: item.isChecked ? Colors.grey.shade400 : Colors.black87,
-                              decoration: item.isChecked ? TextDecoration.lineThrough : TextDecoration.none,
-                            ),
-                            child: Text(item.title),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.black26),
-                            onPressed: () {
-                              ref.read(groupProvider.notifier).removeItemFromGroup(group.id, item.id);
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          // Complete Button Area
-          if (group.items.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDFCF8),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFDFCF8).withOpacity(0.9),
-                    blurRadius: 20,
-                    spreadRadius: 20,
-                    offset: const Offset(0, -10),
-                  )
-                ],
+                          );
+                        },
+                      ),
               ),
-              child: SafeArea(
-                top: false,
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                      ),
-                      onPressed: () {
-                        ref.read(historyProvider.notifier).addLog(group);
-                        ref.read(groupProvider.notifier).uncheckAllItems(group.id);
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('완료 처리되어 히스토리에 저장되었습니다 🎉', style: TextStyle(fontFamily: 'Hansol', fontSize: 16)),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            backgroundColor: Theme.of(context).colorScheme.secondary,
+              // Complete Button Area
+              if (group.items.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(20.0),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDFCF8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFDFCF8).withOpacity(0.9),
+                        blurRadius: 20,
+                        spreadRadius: 20,
+                        offset: const Offset(0, -10),
+                      )
+                    ],
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 60,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                            ],
                           ),
-                        );
-                      },
-                      child: const Text('완료 처리', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          ),
+                          onPressed: () {
+                            _confettiController.play();
+                            HapticFeedback.mediumImpact();
+                            
+                            ref.read(historyProvider.notifier).addLog(group);
+                            ref.read(groupProvider.notifier).uncheckAllItems(group.id);
+                            
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('완료 처리되어 히스토리에 저장되었습니다 🎉', style: TextStyle(fontFamily: 'Hansol', fontSize: 16)),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                backgroundColor: Theme.of(context).colorScheme.secondary,
+                              ),
+                            );
+                          },
+                          child: const Text('완료 처리', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              shouldLoop: false,
+              colors: const [
+                Colors.green,
+                Colors.blue,
+                Colors.pink,
+                Colors.orange,
+                Colors.purple,
+                Colors.yellow,
+                Colors.red,
+              ],
+              numberOfParticles: 25,
+              gravity: 0.15,
             ),
+          ),
         ],
       ),
       floatingActionButton: group.items.isNotEmpty 

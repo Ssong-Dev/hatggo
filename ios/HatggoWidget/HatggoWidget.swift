@@ -55,46 +55,33 @@ struct HatggoWidgetEntryView : View {
     let primaryColor = Color(red: 155/255, green: 137/255, blue: 255/255)
     let secondaryColor = Color(red: 107/255, green: 206/255, blue: 180/255)
 
+    var isAllChecked: Bool {
+        !entry.items.isEmpty && entry.items.allSatisfy { $0.isChecked }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("햇꼬 체크리스트")
-                .font(.headline)
-                .foregroundColor(.primary)
-                .padding(.bottom, 2)
-            
-            if entry.items.isEmpty {
-                Text("진행 중인 체크리스트가 없습니다.")
-                    .font(.subheadline)
+        VStack(alignment: isAllChecked ? .center : .leading, spacing: 6) {
+            if isAllChecked {
+                Spacer()
+                Text("🥳")
+                    .font(.system(size: 40))
+                    
+                Text("오늘 할 일 완료!")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(primaryColor)
+                
+                Text("햇꼬가 아주 칭찬해요 💛")
+                    .font(.system(size: 12))
                     .foregroundColor(.secondary)
-            } else {
-                // 최대 12개 항목 노출 (systemLarge 위젯 지원)
-                ForEach(entry.items.prefix(12)) { item in
-                    Button(intent: ToggleChecklistItemIntent(itemId: item.id)) {
-                        HStack(spacing: 10) {
-                            Image(systemName: item.isChecked ? "checkmark.square.fill" : "square")
-                                .foregroundColor(item.isChecked ? secondaryColor : .secondary.opacity(0.5))
-                                .font(.system(size: 18))
-                            
-                            Text(item.title)
-                                .strikethrough(item.isChecked)
-                                .foregroundColor(item.isChecked ? .secondary : .primary)
-                                .lineLimit(1)
-                                .font(.system(size: 14, weight: item.isChecked ? .regular : .medium))
-                            
-                            Spacer()
-                        }
-                        .padding(.vertical, 5)
-                        .padding(.horizontal, 8)
-                        .background(Color(UIColor.secondarySystemBackground).opacity(item.isChecked ? 0.2 : 0.6))
-                        .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                }
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 6)
+                
+                Spacer()
                 
                 Button(intent: CompleteChecklistIntent()) {
                     HStack {
                         Spacer()
-                        Text("완료 처리")
+                        Text("히스토리에 저장 🎉")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.white)
                         Spacer()
@@ -104,7 +91,55 @@ struct HatggoWidgetEntryView : View {
                     .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
-                .padding(.top, 6)
+            } else {
+                Text("햇꼬 체크리스트")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                    .padding(.bottom, 2)
+                
+                if entry.items.isEmpty {
+                    Text("진행 중인 체크리스트가 없습니다.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(entry.items.prefix(12)) { item in
+                        Button(intent: ToggleChecklistItemIntent(itemId: item.id)) {
+                            HStack(spacing: 10) {
+                                Image(systemName: item.isChecked ? "checkmark.square.fill" : "square")
+                                    .foregroundColor(item.isChecked ? secondaryColor : .secondary.opacity(0.5))
+                                    .font(.system(size: 18))
+                                
+                                Text(item.title)
+                                    .strikethrough(item.isChecked)
+                                    .foregroundColor(item.isChecked ? .secondary : .primary)
+                                    .lineLimit(1)
+                                    .font(.system(size: 14, weight: item.isChecked ? .regular : .medium))
+                                
+                                Spacer()
+                            }
+                            .padding(.vertical, 5)
+                            .padding(.horizontal, 8)
+                            .background(Color(UIColor.secondarySystemBackground).opacity(item.isChecked ? 0.2 : 0.6))
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    Button(intent: CompleteChecklistIntent()) {
+                        HStack {
+                            Spacer()
+                            Text("완료 처리")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
+                        .padding(.vertical, 10)
+                        .background(primaryColor)
+                        .cornerRadius(12)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 6)
+                }
             }
             Spacer()
         }
