@@ -39,6 +39,9 @@ dependencies:
   home_widget: ^0.9.1
   intl: ^0.20.2
   confetti: ^0.7.0
+  http: ^1.2.1
+  web_socket_channel: ^3.0.1
+  uuid: ^4.5.3
 
 dev_dependencies:
   flutter_test:
