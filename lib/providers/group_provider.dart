@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:home_widget/home_widget.dart';
@@ -19,11 +19,23 @@ const String _iOSWidgetName = 'HatggoWidget';
 const String _androidWidgetName = 'WidgetActionReceiver';
 const String _widgetDataKey = 'checklist_data';
 
-// 에뮬레이터 및 시뮬레이터 구동 환경에 따른 서버 주소 설정
-String get serverHost {
-  if (kIsWeb) return 'localhost:3000';
-  if (Platform.isAndroid) return '10.0.2.2:3000';
-  return 'localhost:3000';
+// 에뮬레이터 및 시뮬레이터 구동 환경에 따른 서버 주소 설정 (디버그 모드와 릴리즈 모드 분기)
+String get apiBaseUrl {
+  if (kDebugMode) {
+    if (kIsWeb) return 'http://localhost:3000';
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
+    return 'http://localhost:3000';
+  }
+  return 'https://hatggo.onrender.com';
+}
+
+String get wsBaseUrl {
+  if (kDebugMode) {
+    if (kIsWeb) return 'ws://localhost:3000';
+    if (Platform.isAndroid) return 'ws://10.0.2.2:3000';
+    return 'ws://localhost:3000';
+  }
+  return 'wss://hatggo.onrender.com';
 }
 
 class GroupNotifier extends Notifier<List<ChecklistGroup>> {
@@ -100,7 +112,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
     
     _disconnectWebSocket();
 
-    final wsUrl = Uri.parse('ws://$serverHost/ws?groupId=$groupId&nickname=${Uri.encodeComponent(nickname)}&memberId=$_memberId');
+    final wsUrl = Uri.parse('$wsBaseUrl/ws?groupId=$groupId&nickname=${Uri.encodeComponent(nickname)}&memberId=$_memberId');
     try {
       _wsChannel = WebSocketChannel.connect(wsUrl);
       _currentWsGroupId = groupId;
@@ -211,7 +223,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
     try {
       final ownerToken = Uuid().v4();
       final response = await http.post(
-        Uri.parse('http://$serverHost/api/groups'),
+        Uri.parse('$apiBaseUrl/api/groups'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'title': title.trim(),
@@ -240,7 +252,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
   Future<void> joinGroupWithCode(String inviteCode) async {
     if (inviteCode.trim().isEmpty) return;
     final response = await http.post(
-      Uri.parse('http://$serverHost/api/groups/join'),
+      Uri.parse('$apiBaseUrl/api/groups/join'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'inviteCode': inviteCode.trim().toUpperCase()}),
     );
@@ -269,7 +281,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
       // 공유 그룹 삭제 시 서버에 삭제 요청 (방장일 때만 토큰 포함)
       final ownerToken = _ownerTokens[id];
       http.delete(
-        Uri.parse('http://$serverHost/api/groups/$id'),
+        Uri.parse('$apiBaseUrl/api/groups/$id'),
         headers: {
           'Content-Type': 'application/json',
           if (ownerToken != null) 'X-Owner-Token': ownerToken,
@@ -299,7 +311,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
     final group = state.firstWhere((g) => g.id == id, orElse: () => ChecklistGroup(id: '', title: ''));
     if (group.id.isNotEmpty && group.inviteCode != null) {
       http.put(
-        Uri.parse('http://$serverHost/api/groups/$id/title'),
+        Uri.parse('$apiBaseUrl/api/groups/$id/title'),
         headers: {
           'Content-Type': 'application/json',
           'X-Member-Id': _memberId,
@@ -322,7 +334,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
     final group = state.firstWhere((g) => g.id == groupId, orElse: () => ChecklistGroup(id: '', title: ''));
     if (group.id.isNotEmpty && group.inviteCode != null) {
       http.post(
-        Uri.parse('http://$serverHost/api/groups/$groupId/items'),
+        Uri.parse('$apiBaseUrl/api/groups/$groupId/items'),
         headers: {
           'Content-Type': 'application/json',
           'X-Member-Id': _memberId,
@@ -352,7 +364,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
 
     if (group.id.isNotEmpty && group.inviteCode != null) {
       http.post(
-        Uri.parse('http://$serverHost/api/groups/$groupId/items/$itemId/toggle'),
+        Uri.parse('$apiBaseUrl/api/groups/$groupId/items/$itemId/toggle'),
         headers: {
           'Content-Type': 'application/json',
           'X-Member-Id': _memberId,
@@ -387,7 +399,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
     final group = state.firstWhere((g) => g.id == groupId, orElse: () => ChecklistGroup(id: '', title: ''));
     if (group.id.isNotEmpty && group.inviteCode != null) {
       http.delete(
-        Uri.parse('http://$serverHost/api/groups/$groupId/items/$itemId'),
+        Uri.parse('$apiBaseUrl/api/groups/$groupId/items/$itemId'),
         headers: {
           'Content-Type': 'application/json',
           'X-Member-Id': _memberId,
@@ -410,7 +422,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
     final group = state.firstWhere((g) => g.id == groupId, orElse: () => ChecklistGroup(id: '', title: ''));
     if (group.id.isNotEmpty && group.inviteCode != null) {
       http.post(
-        Uri.parse('http://$serverHost/api/groups/$groupId/uncheck-all'),
+        Uri.parse('$apiBaseUrl/api/groups/$groupId/uncheck-all'),
         headers: {
           'Content-Type': 'application/json',
           'X-Member-Id': _memberId,
@@ -439,7 +451,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
     if (ownerToken == null) return;
 
     await http.post(
-      Uri.parse('http://$serverHost/api/groups/$groupId/permissions'),
+      Uri.parse('$apiBaseUrl/api/groups/$groupId/permissions'),
       headers: {
         'Content-Type': 'application/json',
         'X-Owner-Token': ownerToken,
@@ -457,7 +469,7 @@ class GroupNotifier extends Notifier<List<ChecklistGroup>> {
     if (ownerToken == null) return;
 
     await http.post(
-      Uri.parse('http://$serverHost/api/groups/$groupId/kick'),
+      Uri.parse('$apiBaseUrl/api/groups/$groupId/kick'),
       headers: {
         'Content-Type': 'application/json',
         'X-Owner-Token': ownerToken,
