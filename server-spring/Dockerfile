@@ -1,5 +1,5 @@
 # 1단계: 빌드 스테이지
-FROM eclipse-temurin:17-jdk-alpine AS build
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
 
 # Gradle 래퍼 및 빌드 설정 파일 복사
@@ -17,7 +17,7 @@ COPY src src
 RUN ./gradlew clean build -x test --no-daemon
 
 # 2단계: 실행 스테이지 (경량 JRE 이미지 사용)
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # 빌드 스테이지에서 생성된 jar 파일 복사
